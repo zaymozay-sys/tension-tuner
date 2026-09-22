@@ -335,7 +335,7 @@ document.getElementById("installBtnDesktop").addEventListener("click", tryInstal
 
 /* ===================== storage ===================== */
 var STORE_KEY = "canvas_tension_v2";
-var state = { sizes: [], selectedSizeId: null, sensitivity: "normal", seq: 1 };
+var state = { sizes: [], selectedSizeId: null, sensitivity: "normal", avgTaps: 1, seq: 1 };
 
 function loadState(){
   try{
@@ -346,6 +346,7 @@ function loadState(){
         state.sizes = Array.isArray(p.sizes) ? p.sizes : [];
         state.selectedSizeId = p.selectedSizeId || null;
         state.sensitivity = p.sensitivity || "normal";
+        state.avgTaps = (p.avgTaps===3) ? 3 : 1;
         state.seq = typeof p.seq === "number" ? p.seq : 1;
       }
     }else{
@@ -366,6 +367,50 @@ function saveState(){
 }
 function nextId(){ state.seq++; return "s"+state.seq+"_"+Date.now().toString(36); }
 function sizeById(id){ return state.sizes.find(function(s){return s.id===id;}); }
+
+/* ===================== backup: export / import ===================== */
+function exportData(){
+  try{
+    var payload = { app: "canvas-tension-tuner", exportedAt: new Date().toISOString(), state: state };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    var stamp = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = "natyazhka-backup-"+stamp+".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+  }catch(e){
+    alert("Не удалось создать файл резервной копии.");
+  }
+}
+function importDataFromFile(file){
+  var reader = new FileReader();
+  reader.onload = function(){
+    var parsed;
+    try{ parsed = JSON.parse(reader.result); }
+    catch(e){ alert("Файл повреждён или это не резервная копия НАТЯЖКИ."); return; }
+    var incoming = (parsed && parsed.state) ? parsed.state : parsed;
+    if(!incoming || !Array.isArray(incoming.sizes)){
+      alert("Файл повреждён или это не резервная копия НАТЯЖКИ.");
+      return;
+    }
+    var msg = "Заменить текущие данные ("+state.sizes.length+" размер(ов)) данными из файла ("+incoming.sizes.length+" размер(ов))? Текущие данные будут потеряны.";
+    if(!confirm(msg)) return;
+    state.sizes = incoming.sizes;
+    state.selectedSizeId = incoming.selectedSizeId || (incoming.sizes.length ? incoming.sizes[0].id : null);
+    state.sensitivity = incoming.sensitivity || "normal";
+    state.avgTaps = (incoming.avgTaps===3) ? 3 : 1;
+    state.seq = typeof incoming.seq === "number" ? incoming.seq : (incoming.sizes.length+1);
+    saveState();
+    render();
+    alert("Данные загружены.");
+  };
+  reader.onerror = function(){ alert("Не удалось прочитать файл."); };
+  reader.readAsText(file);
+}
 
 /* ===================== theme ===================== */
 function applyTheme(mode){
@@ -389,6 +434,29 @@ function emptyState(icon,title,text,cta){
 }
 function fmtHz(n){ return (Math.round(n*10)/10).toLocaleString("ru-RU"); }
 function fmtTime(ts){ var d=new Date(ts); return d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0")+":"+d.getSeconds().toString().padStart(2,"0"); }
+
+/* ===================== vibration feedback ===================== */
+function vibrate(pattern){
+  try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+}
+
+/* ===================== screen wake lock ===================== */
+var wakeLockRef = null;
+function acquireWakeLock(){
+  try{
+    if(!("wakeLock" in navigator)) return;
+    navigator.wakeLock.request("screen").then(function(lock){
+      wakeLockRef = lock;
+      lock.addEventListener("release", function(){ wakeLockRef = null; });
+    }).catch(function(){});
+  }catch(e){}
+}
+function releaseWakeLock(){
+  if(wakeLockRef){ try{ wakeLockRef.release(); }catch(e){} wakeLockRef = null; }
+}
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState === "visible" && listening && !wakeLockRef){ acquireWakeLock(); }
+});
 
 /* ===================== preset slots ===================== */
 var PRESET_SIZES = ["20×30 см","30×40 см","40×50 см","40×60 см","50×60 см","50×70 см","60×80 см","60×90 см","70×100 см","80×100 см","90×120 см","100×150 см"];
@@ -493,6 +561,7 @@ function startListening(onTap){
       engineState = "quiet"; captureBuffer=[];
       onTapCallback = onTap;
       listening = true;
+      acquireWakeLock();
       loop();
       render();
     })
@@ -508,6 +577,7 @@ function stopListening(){
   if(micStream){ micStream.getTracks().forEach(function(t){t.stop();}); micStream=null; }
   if(audioCtx){ try{ audioCtx.close(); }catch(e){} audioCtx=null; }
   analyser=null; engineState="idle"; onTapCallback=null;
+  releaseWakeLock();
   render();
 }
 function loop(){
@@ -575,6 +645,7 @@ function startRecordingFlow(){
       recMediaRecorder.onstop = function(){ finishRecording(); };
       recMediaRecorder.start();
       recState = "recording"; recStart = performance.now();
+      vibrate(25);
       render();
       tickRecordingProgress();
       recTimer = setTimeout(function(){ if(recState==="recording") stopRecordingNow(); }, REC_MAX_MS);
@@ -609,6 +680,7 @@ function finishRecording(){
     estimateFreqFromBlob(blob, function(freq){
       recFreq = freq;
       recState = "done";
+      vibrate(45);
       render();
     });
   };
@@ -759,7 +831,13 @@ function renderTuner(){
     return html;
   }
 
-  var freq = lastReading ? lastReading.freq : null;
+  var avgN = (state.avgTaps===3) ? Math.min(3, tapHistory.length) : (tapHistory.length ? 1 : 0);
+  var freq = null;
+  if(avgN > 0){
+    var sum = 0;
+    for(var ai=0; ai<avgN; ai++){ sum += tapHistory[ai].freq; }
+    freq = sum/avgN;
+  }
   var diffPct = freq ? ((freq - size.target)/size.target*100) : 0;
   var tol = size.tolerance || 3;
   var clamped = Math.max(-30, Math.min(30, diffPct));
@@ -776,6 +854,7 @@ function renderTuner(){
   html += '<div class="frame tuner-face">' +
     '<div class="freq-readout">'+(freq?fmtHz(freq):"—")+'<span class="freq-unit">Гц</span></div>' +
     '<div class="freq-target">Эталон: '+fmtHz(size.target)+' Гц · допуск ±'+tol+'%'+
+      (state.avgTaps===3 && avgN>0 ? ' · среднее по '+avgN : '') +
       (size.refAudio ? ' <button class="link-btn" id="playRef">🔊 прослушать эталон</button>' : '') +
     '</div>' +
     '<div class="gauge">' +
@@ -792,6 +871,10 @@ function renderTuner(){
       Object.keys(SENS).map(function(k){
         return '<div class="sens-chip'+(state.sensitivity===k?" active":"")+'" data-sens="'+k+'">'+SENS[k].label+'</div>';
       }).join("") +
+    '</div>' +
+    '<div class="sens-row">' +
+      '<div class="sens-chip'+(state.avgTaps===1?" active":"")+'" data-avg="1">1 удар</div>' +
+      '<div class="sens-chip'+(state.avgTaps===3?" active":"")+'" data-avg="3">Среднее по 3</div>' +
     '</div>' +
     '<div class="mic-controls">' +
       (listening
@@ -851,6 +934,14 @@ function renderSizes(){
     });
     html += '</div>';
   }
+
+  html += '<div class="section-title">Резервная копия</div>';
+  html += '<div class="frame" style="display:flex; gap:8px; flex-wrap:wrap;">' +
+    '<button class="btn secondary" id="btnExport" style="flex:1;min-width:140px;">⬇ Экспорт в файл</button>' +
+    '<button class="btn secondary" id="btnImport" style="flex:1;min-width:140px;">⬆ Импорт из файла</button>' +
+    '<input type="file" id="importFile" accept="application/json,.json" style="display:none;">' +
+    '</div>';
+
   return html;
 }
 
@@ -926,6 +1017,18 @@ function bindHandlers(){
     startListening(function(freq){
       lastReading = { freq:freq, ts:Date.now() };
       tapHistory.unshift(lastReading);
+      var size = sizeById(state.selectedSizeId);
+      if(size && size.target){
+        var n = (state.avgTaps===3) ? Math.min(3, tapHistory.length) : 1;
+        var sum=0; for(var i=0;i<n;i++){ sum+=tapHistory[i].freq; }
+        var avgFreq = sum/n;
+        var diffPct = (avgFreq - size.target)/size.target*100;
+        var tol = size.tolerance || 3;
+        if(diffPct < -tol || diffPct > tol){ vibrate([40,50,40]); }
+        else{ vibrate(70); }
+      }else{
+        vibrate(30);
+      }
       render();
     });
   });
@@ -964,7 +1067,10 @@ function bindHandlers(){
   });
 
   document.querySelectorAll(".sens-chip").forEach(function(el){
-    el.addEventListener("click", function(){ state.sensitivity = el.dataset.sens; saveState(); render(); });
+    el.addEventListener("click", function(){
+      if(el.dataset.sens){ state.sensitivity = el.dataset.sens; saveState(); render(); }
+      else if(el.dataset.avg){ state.avgTaps = Number(el.dataset.avg); saveState(); render(); }
+    });
   });
 
   document.querySelectorAll(".slot").forEach(function(el){
@@ -985,6 +1091,18 @@ function bindHandlers(){
   document.querySelectorAll("[data-tone]").forEach(function(el){
     el.addEventListener("click", function(){ playTone(Number(el.dataset.tone)); });
   });
+
+  var btnExport = document.getElementById("btnExport");
+  if(btnExport) btnExport.addEventListener("click", exportData);
+  var btnImport = document.getElementById("btnImport");
+  var importFile = document.getElementById("importFile");
+  if(btnImport && importFile){
+    btnImport.addEventListener("click", function(){ importFile.click(); });
+    importFile.addEventListener("change", function(){
+      if(importFile.files && importFile.files[0]){ importDataFromFile(importFile.files[0]); }
+      importFile.value = "";
+    });
+  }
 
   var addSize = document.getElementById("addSize");
   if(addSize) addSize.addEventListener("click", function(){ openSizeForm(null); });
