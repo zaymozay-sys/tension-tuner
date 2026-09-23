@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#A78BD6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="НАТЯЖКА">
-<title>НАТЯЖКА — тюнер холста</title>
+<meta name="apple-mobile-web-app-title" content="TapTension">
+<title>TapTension — тюнер натяжения подвеса полотна</title>
 <link rel="apple-touch-icon" id="appleTouchIcon" href="">
 <style>
   :root{
@@ -69,6 +69,10 @@
   .install-btn{
     display:flex; align-items:center; justify-content:center; gap:6px; background:var(--accent-soft); color:var(--accent);
     border:none; border-radius:var(--radius-sm); padding:9px 10px; font-weight:700; font-size:12px; cursor:pointer;
+  }
+  .settings-btn{
+    background:var(--surface-2); border:1px solid var(--border); color:var(--ink);
+    border-radius:var(--radius-sm); padding:7px 10px; font-size:15px; cursor:pointer; line-height:1;
   }
 
   .main{ flex:1; min-width:0; padding:26px 26px 100px; max-width:640px; }
@@ -170,7 +174,7 @@
   .section-title:first-child{ margin-top:0; }
   .slot-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:10px; }
   .slot{
-    border-radius:var(--radius); padding:14px; cursor:pointer; text-align:left;
+    border-radius:var(--radius); padding:14px; cursor:pointer; text-align:left; position:relative;
     border:1.5px dashed var(--border); background:var(--surface-2);
   }
   .slot.added{ border-style:solid; background:var(--surface); }
@@ -179,6 +183,8 @@
   .slot-status{ font-size:11.5px; color:var(--ink-muted); margin-top:5px; }
   .slot.tuned .slot-status{ color:var(--tuned); font-weight:700; }
   .slot-plus{ font-size:15px; color:var(--accent); font-weight:800; }
+  .slot-del{ position:absolute; top:6px; right:6px; background:none; border:none; color:var(--ink-muted); cursor:pointer; font-size:13px; padding:3px 5px; line-height:1; }
+  .slot-del:hover{ color:var(--tight); }
 
   .toolbar{ display:flex; justify-content:flex-end; margin-bottom:14px; }
   .size-list{ display:flex; flex-direction:column; gap:10px; }
@@ -244,8 +250,8 @@
 
 <div class="shell">
   <aside class="rail">
-    <div class="brand-mark">НАТЯЖКА</div>
-    <div class="brand-sub">тюнер натяжения холста</div>
+    <div class="brand-mark">TapTension</div>
+    <div class="brand-sub">натяжение подвеса рамы для полотна<br><span style="opacity:0.7;font-size:10px;" id="brandVersion"></span></div>
     <nav class="nav" id="nav">
       <button class="nav-btn" data-view="tuner"><span class="nav-ico">◉</span><span>Тюнер</span></button>
       <button class="nav-btn" data-view="sizes"><span class="nav-ico">▭</span><span>Холсты</span></button>
@@ -257,6 +263,7 @@
         <button class="theme-btn" data-theme="dark">Тёмная</button>
         <button class="theme-btn" data-theme="auto">Авто</button>
       </div>
+      <button class="link-btn" id="aboutBtnDesktop" style="width:100%;text-align:center;">ⓘ О разработчике</button>
     </div>
   </aside>
   <main class="main" id="main"></main>
@@ -289,8 +296,8 @@ var ICON512 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkO
 (function setupManifest(){
   try{
     var manifest = {
-      name: "НАТЯЖКА — тюнер холста",
-      short_name: "НАТЯЖКА",
+      name: "TapTension — тюнер натяжения подвеса полотна",
+      short_name: "TapTension",
       start_url: location.href,
       scope: location.href,
       display: "standalone",
@@ -332,9 +339,15 @@ function showToast(){ document.getElementById("installToast").classList.add("ope
 function hideToast(){ document.getElementById("installToast").classList.remove("open"); }
 document.getElementById("toastClose").addEventListener("click", hideToast);
 document.getElementById("installBtnDesktop").addEventListener("click", tryInstall);
+document.getElementById("aboutBtnDesktop").addEventListener("click", function(){
+  openDrawer("О разработчике", renderAboutBody(), '<button class="btn secondary" id="aboutCloseDesktop" style="width:100%;">Закрыть</button>');
+  var c = document.getElementById("aboutCloseDesktop");
+  if(c) c.addEventListener("click", closeDrawer);
+});
 
 /* ===================== storage ===================== */
 var STORE_KEY = "canvas_tension_v2";
+var APP_VERSION = "1.7";
 var state = { sizes: [], selectedSizeId: null, sensitivity: "normal", avgTaps: 1, seq: 1 };
 
 function loadState(){
@@ -407,6 +420,50 @@ function importDataFromFile(file){
     saveState();
     render();
     alert("Данные загружены.");
+  };
+  reader.onerror = function(){ alert("Не удалось прочитать файл."); };
+  reader.readAsText(file);
+}
+
+/* ===================== backup: single-sample export / import ===================== */
+function exportSingleSample(size){
+  try{
+    var payload = { app: "canvas-tension-tuner-sample", exportedAt: new Date().toISOString(),
+      sample: { name: size.name, target: size.target, tolerance: size.tolerance||3, refAudio: size.refAudio||null } };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    var safe = size.name.replace(/[^\wа-яА-ЯёЁ]+/g,"-");
+    a.href = url;
+    a.download = "natyazhka-obrazec-"+safe+".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+  }catch(e){
+    alert("Не удалось создать файл образца.");
+  }
+}
+function importSingleSampleFile(file, targetSizeId, onDone){
+  var reader = new FileReader();
+  reader.onload = function(){
+    var parsed;
+    try{ parsed = JSON.parse(reader.result); }
+    catch(e){ alert("Файл повреждён или это не файл образца НАТЯЖКИ."); return; }
+    var sample = (parsed && parsed.sample) ? parsed.sample : parsed;
+    if(!sample || typeof sample.target !== "number"){
+      alert("Файл повреждён или это не файл образца НАТЯЖКИ.");
+      return;
+    }
+    var size = sizeById(targetSizeId);
+    if(!size) return;
+    var msg = "Загрузить образец «"+(sample.name||"без имени")+"» ("+fmtHz(sample.target)+" Гц) в слот «"+size.name+"»?";
+    if(!confirm(msg)) return;
+    size.target = sample.target;
+    size.tolerance = (typeof sample.tolerance==="number") ? sample.tolerance : (size.tolerance||3);
+    size.refAudio = sample.refAudio || null;
+    saveState();
+    if(onDone) onDone();
   };
   reader.onerror = function(){ alert("Не удалось прочитать файл."); };
   reader.readAsText(file);
@@ -757,9 +814,35 @@ function render(){
   main.innerHTML = view==="tuner" ? renderTuner() : renderSizes();
   bindHandlers();
 }
+function renderAboutBody(){
+  return '<div style="font-size:13px;line-height:1.65;">' +
+    '<p style="margin:0 0 12px;"><a href="https://zaymozay-sys.github.io/tension-tuner/guide.html" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:none;">📘 Инструкция по использованию →</a></p>' +
+    '<p style="margin:0 0 10px;">Приложение «TapTension» разработано Александром Сергеевичем Воробьёвым, руководителем типографии «ФотоКот» (г. Липецк).</p>' +
+    '<p style="margin:0 0 10px;">Методика контроля натяжения защищена патентом РФ № 2867038 (RU 2 867 038 C1) «Способ контроля качества натяжения гибкого подвеса художественного полотна на подрамнике».</p>' +
+    '<p style="margin:0;color:var(--ink-muted);font-size:12px;">© 2026, Александр Воробьёв / «ФотоКот»</p>' +
+    '</div>';
+}
+
+function renderThemeDrawerBody(){
+  var current = "light";
+  try{ current = localStorage.getItem("tension_theme") || "light"; }catch(e){}
+  return '<div class="field"><label>Тема оформления</label>'+
+    '<div class="theme-toggle" style="padding:4px;">'+
+    '<button class="theme-btn'+(current==="light"?" active":"")+'" data-theme="light">Светлая</button>'+
+    '<button class="theme-btn'+(current==="dark"?" active":"")+'" data-theme="dark">Тёмная</button>'+
+    '<button class="theme-btn'+(current==="auto"?" active":"")+'" data-theme="auto">Авто</button>'+
+    '</div>'+
+    '<div class="field-hint">«Авто» подстраивается под тему устройства.</div></div>'+
+    '<div style="text-align:center;color:var(--ink-muted);font-size:11px;margin-top:8px;">TapTension · версия '+APP_VERSION+'</div>'+
+    '<div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px;">'+renderAboutBody()+'</div>';
+}
+
 function topbar(title, sub){
-  return '<div class="mobile-topbar"><span class="brand-mark">НАТЯЖКА</span>'+
-    '<button class="install-btn" id="installBtnMobile">📲 Установить</button></div>'+
+  return '<div class="mobile-topbar"><span class="brand-mark">TapTension</span>'+
+    '<div style="display:flex;gap:6px;">'+
+    '<button class="settings-btn" id="settingsBtnMobile" aria-label="Настройки">⚙</button>'+
+    '<button class="install-btn" id="installBtnMobile">📲 Установить</button>'+
+    '</div></div>'+
     '<div class="topline"><div class="view-title">'+title+'</div>'+(sub?'<div class="view-sub">'+sub+'</div>':'')+'</div>';
 }
 
@@ -771,7 +854,10 @@ function renderRecorderPanel(context){
 
   if(recState==="idle"){
     html += '<p style="margin:0 0 12px;font-size:12.5px;color:var(--ink-muted);">Стукните металлическим предметом (например, шестигранным ключом) по центру натянутого шнура рядом с микрофоном. Используйте один и тот же предмет и точку удара каждый раз — так показания будет корректно сравнивать.</p>'+
-      '<button class="btn block lg" id="btnStartRec">🎙 Записать образец (2,5 сек)</button>';
+      '<button class="btn block lg" id="btnStartRec">🎙 Записать образец (2,5 сек)</button>'+
+      '<div style="text-align:center;margin:12px 0;color:var(--ink-muted);font-size:11.5px;">— или —</div>'+
+      '<button class="btn secondary block" id="btnImportSample">⬆ Загрузить образец из файла</button>'+
+      '<input type="file" id="importSampleFile" accept="application/json,.json" style="display:none;">';
   }else if(recState==="recording"){
     html += '<div style="text-align:center;"><span class="rec-dot"></span>Идёт запись — стукните по центру шнура сейчас</div>'+
       '<div class="rec-progress"><div class="rec-progress-fill" id="recFill"></div></div>'+
@@ -856,6 +942,7 @@ function renderTuner(){
     '<div class="freq-target">Эталон: '+fmtHz(size.target)+' Гц · допуск ±'+tol+'%'+
       (state.avgTaps===3 && avgN>0 ? ' · среднее по '+avgN : '') +
       (size.refAudio ? ' <button class="link-btn" id="playRef">🔊 прослушать эталон</button>' : '') +
+      ' <button class="link-btn" id="exportSample">⬇ экспорт образца</button>' +
     '</div>' +
     '<div class="gauge">' +
       '<div class="gauge-track">' +
@@ -885,19 +972,25 @@ function renderTuner(){
     '</div>';
 
   if(tapHistory.length){
-    html += '<div class="frame history">' + '<div class="history-title">Последние замеры</div>';
-    tapHistory.slice(0,5).forEach(function(h){
+    html += '<div class="frame history">' +
+      '<div class="history-title" style="display:flex;justify-content:space-between;align-items:center;">'+
+      '<span>Последние замеры</span><button class="link-btn" id="clearHistory" style="font-size:11px;padding:0;">Очистить</button></div>';
+    tapHistory.slice(0,5).forEach(function(h, idx){
       var d = ((h.freq-size.target)/size.target*100);
       var sign = d>0 ? "+" : "";
-      html += '<div class="hist-row"><span>'+fmtTime(h.ts)+'</span><span>'+fmtHz(h.freq)+' Гц</span><span>'+sign+Math.round(d)+'%</span></div>';
+      html += '<div class="hist-row"><span>'+fmtTime(h.ts)+'</span><span>'+fmtHz(h.freq)+' Гц</span>'+
+        '<span style="display:flex;align-items:center;gap:8px;">'+sign+Math.round(d)+'%'+
+        '<button data-del-tap="'+idx+'" aria-label="Удалить замер" style="background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:13px;padding:2px 4px;">✕</button></span></div>';
     });
     html += '</div>';
   }
 
-  html += '<div style="margin-top:14px;">'+
-    (recorderOpen ? renderRecorderPanel("update") :
-     '<button class="btn secondary block" id="openRecorder">🎙 Записать новый образец</button>') +
-    '</div>';
+  html += recorderOpen
+    ? ('<div style="margin-top:14px;">'+renderRecorderPanel("update")+'</div>')
+    : ('<div style="margin-top:14px; display:flex; gap:8px;">'+
+       '<button class="btn secondary" style="flex:1;" id="openRecorder">🎙 Записать новый образец</button>'+
+       '<button class="btn danger" style="flex:1;" id="deleteRef">🗑 Удалить эталон</button>'+
+       '</div>');
   html += tonePanel;
   return html;
 }
@@ -913,6 +1006,7 @@ function renderSizes(){
     var added = !!existing;
     var tuned = added && existing.target!=null;
     html += '<div class="slot'+(added?" added":"")+(tuned?" tuned":"")+'" data-slot="'+escapeHtml(name)+'">'+
+      (added ? '<button class="slot-del" data-del-slot="'+existing.id+'" aria-label="Удалить слот" title="Удалить">✕</button>' : '') +
       '<div class="slot-name">'+escapeHtml(name)+'</div>'+
       '<div class="slot-status">'+(tuned ? "✓ "+fmtHz(existing.target)+" Гц" : (added ? "эталон не задан" : '<span class="slot-plus">+ добавить</span>'))+'</div>'+
       '</div>';
@@ -1002,6 +1096,21 @@ function bindHandlers(){
   var mib = document.getElementById("installBtnMobile");
   if(mib) mib.addEventListener("click", tryInstall);
 
+  var settingsBtn = document.getElementById("settingsBtnMobile");
+  if(settingsBtn) settingsBtn.addEventListener("click", function(){
+    openDrawer("Настройки", renderThemeDrawerBody(), '<button class="btn secondary" id="settingsClose" style="width:100%;">Готово</button>');
+    document.querySelectorAll("#drawerBody .theme-btn").forEach(function(b){
+      b.addEventListener("click", function(){
+        applyTheme(b.dataset.theme);
+        document.querySelectorAll("#drawerBody .theme-btn").forEach(function(x){
+          x.classList.toggle("active", x.dataset.theme===b.dataset.theme);
+        });
+      });
+    });
+    var settingsClose = document.getElementById("settingsClose");
+    if(settingsClose) settingsClose.addEventListener("click", closeDrawer);
+  });
+
   var goSizes = document.getElementById("goSizes");
   if(goSizes) goSizes.addEventListener("click", function(){ view="sizes"; render(); });
 
@@ -1041,11 +1150,54 @@ function bindHandlers(){
     if(size && size.refAudio) playDataUrl(size.refAudio);
   });
 
+  var exportSampleBtn = document.getElementById("exportSample");
+  if(exportSampleBtn) exportSampleBtn.addEventListener("click", function(){
+    var size = sizeById(state.selectedSizeId);
+    if(size) exportSingleSample(size);
+  });
+
   var openRecorder = document.getElementById("openRecorder");
   if(openRecorder) openRecorder.addEventListener("click", function(){ recorderOpen=true; resetRecording(); render(); });
 
+  var deleteRef = document.getElementById("deleteRef");
+  if(deleteRef) deleteRef.addEventListener("click", function(){
+    var size = sizeById(state.selectedSizeId);
+    if(!size) return;
+    if(!confirm("Удалить эталон для «"+size.name+"»? Размер останется в списке, но потребуется записать эталон заново.")) return;
+    size.target = null; size.refAudio = null;
+    saveState();
+    lastReading=null; tapHistory=[]; recorderOpen=false; resetRecording();
+    render();
+  });
+
+  var clearHistory = document.getElementById("clearHistory");
+  if(clearHistory) clearHistory.addEventListener("click", function(){ tapHistory=[]; lastReading=null; render(); });
+
+  document.querySelectorAll("[data-del-tap]").forEach(function(el){
+    el.addEventListener("click", function(e){
+      e.stopPropagation();
+      var idx = Number(el.dataset.delTap);
+      tapHistory.splice(idx,1);
+      lastReading = tapHistory.length ? tapHistory[0] : null;
+      render();
+    });
+  });
+
   var btnStartRec = document.getElementById("btnStartRec");
   if(btnStartRec) btnStartRec.addEventListener("click", startRecordingFlow);
+  var btnImportSample = document.getElementById("btnImportSample");
+  var importSampleFile = document.getElementById("importSampleFile");
+  if(btnImportSample && importSampleFile){
+    btnImportSample.addEventListener("click", function(){ importSampleFile.click(); });
+    importSampleFile.addEventListener("change", function(){
+      if(importSampleFile.files && importSampleFile.files[0]){
+        importSingleSampleFile(importSampleFile.files[0], state.selectedSizeId, function(){
+          recorderOpen=false; resetRecording(); lastReading=null; tapHistory=[]; render();
+        });
+      }
+      importSampleFile.value = "";
+    });
+  }
   var btnStopRec = document.getElementById("btnStopRec");
   if(btnStopRec) btnStopRec.addEventListener("click", stopRecordingNow);
   var btnRetryRec = document.getElementById("btnRetryRec");
@@ -1088,6 +1240,19 @@ function bindHandlers(){
     });
   });
 
+  document.querySelectorAll("[data-del-slot]").forEach(function(el){
+    el.addEventListener("click", function(e){
+      e.stopPropagation();
+      var id = el.dataset.delSlot;
+      var s = sizeById(id);
+      if(!s) return;
+      if(!confirm("Удалить слот «"+s.name+"» вместе с эталоном?")) return;
+      state.sizes = state.sizes.filter(function(x){ return x.id!==id; });
+      if(state.selectedSizeId===id){ state.selectedSizeId = state.sizes.length ? state.sizes[0].id : null; }
+      saveState(); render();
+    });
+  });
+
   document.querySelectorAll("[data-tone]").forEach(function(el){
     el.addEventListener("click", function(){ playTone(Number(el.dataset.tone)); });
   });
@@ -1112,6 +1277,9 @@ function bindHandlers(){
 }
 
 /* ===================== init ===================== */
+var brandVersionEl = document.getElementById("brandVersion");
+if(brandVersionEl){ brandVersionEl.textContent = "версия "+APP_VERSION; }
+
 loadState();
 render();
 })();

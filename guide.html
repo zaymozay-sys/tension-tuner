@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#A487D6">
+<title>TapTension — инструкция</title>
+<style>
+  :root{
+    --bg:#F4F2FA; --surface:#FFFFFF; --surface-2:#F1EDF9; --border:#E2DBF1;
+    --ink:#332C46; --ink-muted:#8A81A0;
+    --accent:#A487D6; --accent-fg:#FFFFFF; --accent-soft:#EDE4FA;
+    --loose:#6E96C9; --loose-bg:#E2ECF9;
+    --tuned:#5CAE84; --tuned-bg:#E1F3E8;
+    --tight:#D97EA3; --tight-bg:#FAE3ED;
+    --radius:14px; --radius-sm:10px;
+    --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  :root[data-theme="dark"]{
+    --bg:#211C2E; --surface:#2A2438; --surface-2:#312A42; --border:#443A59;
+    --ink:#EDE9F5; --ink-muted:#A79BC2;
+    --accent:#BFA3E8; --accent-fg:#221A33; --accent-soft:#3B3050;
+    --loose:#8FB4E0; --loose-bg:#293852;
+    --tuned:#8AD1A9; --tuned-bg:#1F3A2C;
+    --tight:#E8A2C0; --tight-bg:#452A38;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#211C2E; --surface:#2A2438; --surface-2:#312A42; --border:#443A59;
+      --ink:#EDE9F5; --ink-muted:#A79BC2;
+      --accent:#BFA3E8; --accent-fg:#221A33; --accent-soft:#3B3050;
+      --loose:#8FB4E0; --loose-bg:#293852;
+      --tuned:#8AD1A9; --tuned-bg:#1F3A2C;
+      --tight:#E8A2C0; --tight-bg:#452A38;
+    }
+  }
+  html{ scroll-padding-top:calc(var(--safe-t) + 60px); }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+    padding-top:var(--safe-t); padding-bottom:var(--safe-b);
+  }
+  .wrap{ max-width:640px; margin:0 auto; padding:24px 20px 60px; }
+  .top{ position:sticky; top:0; background:var(--bg); padding:calc(14px + var(--safe-t)) 20px 12px; z-index:5; border-bottom:1px solid var(--border); }
+  h1{ font-size:22px; font-weight:800; margin:0 0 2px; letter-spacing:-0.01em; }
+  .sub{ color:var(--ink-muted); font-size:13px; margin:0; }
+  .toc{ display:flex; gap:6px; overflow-x:auto; padding:12px 20px 0; -webkit-overflow-scrolling:touch; }
+  .toc a{
+    flex-shrink:0; text-decoration:none; font-size:12.5px; font-weight:700; color:var(--accent);
+    background:var(--accent-soft); padding:6px 12px; border-radius:20px; white-space:nowrap;
+  }
+  section{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px; margin:16px 0; scroll-margin-top:120px; }
+  h2{ font-size:16.5px; font-weight:800; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  h2 .n{ background:var(--accent); color:var(--accent-fg); width:22px; height:22px; border-radius:50%; font-size:12px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  h3{ font-size:13.5px; font-weight:700; margin:16px 0 6px; }
+  p{ margin:0 0 10px; font-size:14px; }
+  ol,ul{ margin:0 0 10px; padding-left:20px; }
+  li{ margin-bottom:6px; font-size:14px; }
+  .tip{ background:var(--accent-soft); border-radius:var(--radius-sm); padding:11px 14px; font-size:13px; margin:10px 0; }
+  .warn{ background:var(--tight-bg); color:var(--tight); border-radius:var(--radius-sm); padding:11px 14px; font-size:13px; margin:10px 0; font-weight:600; }
+  .badge{ display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700; margin:2px 4px 2px 0; }
+  .badge.loose{ background:var(--loose-bg); color:var(--loose); }
+  .badge.tuned{ background:var(--tuned-bg); color:var(--tuned); }
+  .badge.tight{ background:var(--tight-bg); color:var(--tight); }
+  code{ background:var(--surface-2); padding:2px 6px; border-radius:5px; font-size:12.5px; }
+  a.link{ color:var(--accent); font-weight:700; }
+  .foot{ text-align:center; color:var(--ink-muted); font-size:12px; padding:20px 0 0; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>TapTension</h1>
+  <p class="sub">Инструкция по установке и работе · версия приложения 1.5</p>
+</div>
+
+<div class="toc">
+  <a href="#start">Быстрый старт</a>
+  <a href="#etalon">Эталон</a>
+  <a href="#check">Проверка</a>
+  <a href="#backup">Резервная копия</a>
+  <a href="#mic">Микрофон</a>
+</div>
+
+<div class="wrap">
+
+  <section id="start">
+    <h2><span class="n">1</span>Быстрый старт</h2>
+    <p>«TapTension» — инструмент для проверки натяжения гибкого подвеса (шнура) художественного полотна на подрамнике по звуку удара, по принципу гитарного тюнера.</p>
+    <ol>
+      <li>Откройте ссылку на приложение в браузере <b>Chrome</b> на телефоне.</li>
+      <li>Нажмите значок ⚙ (на телефоне) или «Установить на телефон» и добавьте иконку на главный экран — приложение будет открываться как обычное, без адресной строки браузера.</li>
+      <li>При первом использовании записи образца подтвердите системный запрос доступа к микрофону.</li>
+    </ol>
+    <div class="tip">Важно: ссылку нужно открывать напрямую в Chrome, а не внутри другого приложения — иначе доступ к микрофону может быть недоступен.</div>
+  </section>
+
+  <section id="etalon">
+    <h2><span class="n">2</span>Эталон для размера холста</h2>
+    <p>Каждый размер холста хранит свой эталонный звук — образец, с которым будут сравниваться дальнейшие проверки.</p>
+    <h3>Добавление размера</h3>
+    <p>На вкладке «Холсты» выберите готовый слот из сетки основных размеров или добавьте свой через «+ Свой размер».</p>
+    <h3>Запись эталона</h3>
+    <ol>
+      <li>Откройте нужный размер на вкладке «Тюнер».</li>
+      <li>Нажмите «🎙 Записать образец» — приложение слушает 2,5 секунды.</li>
+      <li>За это время стукните <b>металлическим предметом</b> (например, шестигранным ключом) по центру правильно натянутого шнура рядом с микрофоном.</li>
+      <li>Прослушайте запись, при необходимости запишите заново, затем нажмите «Сохранить как эталон».</li>
+    </ol>
+    <div class="tip">Используйте один и тот же предмет и точку удара каждый раз — от этого зависит, насколько корректно будут сравниваться показания.</div>
+    <p>Частоту эталона можно также ввести вручную в герцах, если она уже известна — без записи звука.</p>
+  </section>
+
+  <section id="check">
+    <h2><span class="n">3</span>Повседневная проверка</h2>
+    <ol>
+      <li>Выберите размер холста в выпадающем списке на вкладке «Тюнер».</li>
+      <li>Нажмите «🎙 Слушать и сравнивать».</li>
+      <li>Стукните по центру шнура тем же предметом, что и при записи эталона.</li>
+    </ol>
+    <p>Результат отображается сразу:</p>
+    <p>
+      <span class="badge loose">▲ слабое натяжение</span>
+      <span class="badge tuned">✓ норма</span>
+      <span class="badge tight">▼ перетянуто</span>
+    </p>
+    <h3>Точность измерения</h3>
+    <ul>
+      <li><b>Чувствительность</b> (Тихо / Обычно / Шумно) — подбирается под уровень шума в помещении.</li>
+      <li><b>Усреднение</b> — «Среднее по 3» использует последние три удара вместо одного, для более стабильного результата.</li>
+      <li>Телефон коротко вибрирует при каждом захвате звука и отдельно — если натяжение вне допуска.</li>
+    </ul>
+  </section>
+
+  <section id="backup">
+    <h2><span class="n">4</span>Резервная копия и перенос данных</h2>
+    <p>Все размеры и эталоны хранятся локально на конкретном телефоне, без облака — поэтому для переноса между устройствами (или в другую типографию) нужен файл.</p>
+    <h3>Весь список размеров</h3>
+    <p>На вкладке «Холсты» внизу: <code>⬇ Экспорт в файл</code> — сохраняет всё; <code>⬆ Импорт из файла</code> — загружает обратно (с заменой текущих данных).</p>
+    <h3>Один эталон</h3>
+    <p>На вкладке «Тюнер», для настроенного размера: <code>⬇ экспорт образца</code>. Для пустого слота на другом устройстве: <code>⬆ Загрузить образец из файла</code> — так можно передать один конкретный эталон, не трогая остальные размеры.</p>
+  </section>
+
+  <section id="mic">
+    <h2><span class="n">5</span>Если не работает микрофон</h2>
+    <p>Самая частая причина — Android один раз запомнил отказ в доступе и больше не показывает запрос. Проверьте по порядку:</p>
+    <ol>
+      <li>Убедитесь, что ссылка открыта в обычном Chrome, а не во встроенном окне другого приложения.</li>
+      <li>В Chrome нажмите на значок слева от адреса сайта → «Разрешения» → «Микрофон» → «Разрешить». Обновите страницу.</li>
+      <li>Если пункта «Микрофон» там нет — проверьте системные настройки телефона: Настройки → Приложения → Chrome → Разрешения → Микрофон → Разрешить.</li>
+      <li>На некоторых Android-оболочках (например, ColorOS) есть отдельный «Диспетчер разрешений» в настройках приватности — проверьте и там тоже.</li>
+    </ol>
+    <div class="warn">Если приложение показывает точный код ошибки вроде <code>[NotReadableError]</code> или <code>[NotAllowedError]</code> — это подскажет причину точнее, чем общие шаги выше.</div>
+  </section>
+
+  <div class="foot">
+    Приложение «TapTension» разработано Александром Сергеевичем Воробьёвым, типография «ФотоКот» (Липецк).<br>
+    Патент РФ № 2867038 «Способ контроля качества натяжения гибкого подвеса художественного полотна на подрамнике».
+  </div>
+
+</div>
+</body>
+</html>
