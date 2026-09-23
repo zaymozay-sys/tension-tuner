@@ -133,6 +133,9 @@
   .verdict.idle{ background:var(--surface-2); color:var(--ink-muted); font-weight:600; }
 
   .level-wrap{ display:flex; align-items:center; gap:10px; margin:18px 0 4px; }
+  .osc-wrap{ margin:18px 0 4px; }
+  .osc-label{ font-size:11px; color:var(--ink-muted); margin-bottom:6px; text-align:center; }
+  .osc-canvas{ width:100%; height:52px; display:block; border-radius:var(--radius-sm); background:#000; }
   .level-bar{ flex:1; height:6px; background:var(--surface-2); border-radius:6px; overflow:hidden; }
   .level-fill{ height:100%; background:var(--accent); width:0%; transition:width 0.08s linear; }
   .level-label{ font-size:11px; color:var(--ink-muted); width:80px; text-align:right; }
@@ -347,7 +350,7 @@ document.getElementById("aboutBtnDesktop").addEventListener("click", function(){
 
 /* ===================== storage ===================== */
 var STORE_KEY = "canvas_tension_v2";
-var APP_VERSION = "1.7";
+var APP_VERSION = "2.2";
 var state = { sizes: [], selectedSizeId: null, sensitivity: "normal", avgTaps: 1, seq: 1 };
 
 function loadState(){
@@ -491,6 +494,12 @@ function emptyState(icon,title,text,cta){
 }
 function fmtHz(n){ return (Math.round(n*10)/10).toLocaleString("ru-RU"); }
 function fmtTime(ts){ var d=new Date(ts); return d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0")+":"+d.getSeconds().toString().padStart(2,"0"); }
+function fmtDateTime(ts){
+  var d=new Date(ts);
+  var day=d.getDate().toString().padStart(2,"0")+"."+(d.getMonth()+1).toString().padStart(2,"0");
+  var time=d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0");
+  return day+" "+time;
+}
 
 /* ===================== vibration feedback ===================== */
 function vibrate(pattern){
@@ -524,14 +533,14 @@ function computeRMS(buf){
   for(var i=0;i<buf.length;i++){ sum += buf[i]*buf[i]; }
   return Math.sqrt(sum/buf.length);
 }
-function autoCorrelate(buf, sampleRate){
+function autoCorrelate(buf, sampleRate, minFreqOverride, maxFreqOverride){
   var SIZE = buf.length;
   var rms = computeRMS(buf);
-  if(rms < 0.006) return -1;
-  var minFreq=45, maxFreq=1500;
+  if(rms < 0.006) return null;
+  var minFreq = minFreqOverride || 45, maxFreq = maxFreqOverride || 1500;
   var minLag = Math.floor(sampleRate/maxFreq);
   var maxLag = Math.min(Math.floor(sampleRate/minFreq), SIZE-2);
-  if(maxLag <= minLag) return -1;
+  if(maxLag <= minLag) return null;
 
   var bestLag=-1, bestVal=-Infinity;
   for(var lag=minLag; lag<=maxLag; lag++){
@@ -541,10 +550,13 @@ function autoCorrelate(buf, sampleRate){
     sum = sum / n;
     if(sum > bestVal){ bestVal=sum; bestLag=lag; }
   }
-  if(bestLag<=0) return -1;
+  if(bestLag<=0) return null;
 
   var norm0=0; for(var j=0;j<SIZE;j++){ norm0 += buf[j]*buf[j]; } norm0/=SIZE;
-  if(norm0<=0 || bestVal/norm0 < 0.35) return -1;
+  if(norm0<=0) return null;
+  var confidence = bestVal/norm0;
+  if(confidence < 0.35) return null;
+  confidence = Math.max(0, Math.min(1, confidence));
 
   var T0=bestLag;
   if(T0>minLag && T0<maxLag){
@@ -559,14 +571,45 @@ function autoCorrelate(buf, sampleRate){
     if(a!==0){ var shift=-b/(2*a); if(Math.abs(shift)<1) T0 = T0+shift; }
   }
   var freq = sampleRate/T0;
-  if(freq<minFreq || freq>maxFreq) return -1;
-  return freq;
+  if(freq<minFreq || freq>maxFreq) return null;
+  return { freq: freq, confidence: confidence };
 }
 function medianOf(arr){
   if(!arr.length) return null;
   var s = arr.slice().sort(function(a,b){return a-b;});
   var mid = Math.floor(s.length/2);
   return s.length%2 ? s[mid] : (s[mid-1]+s[mid])/2;
+}
+function getSearchRange(size){
+  if(!size) return null;
+  if(size.rangeMin!=null && size.rangeMax!=null && size.rangeMax>size.rangeMin){
+    return [size.rangeMin, size.rangeMax];
+  }
+  if(size.target){
+    return [Math.max(30, size.target*0.55), Math.min(2500, size.target*1.6)];
+  }
+  return null;
+}
+function confidenceColorVar(c){
+  if(c==null) return "var(--ink-muted)";
+  if(c>=0.7) return "var(--tuned)";
+  if(c>=0.4) return "var(--accent)";
+  return "var(--tight)";
+}
+function renderConfidenceRing(confidence){
+  if(confidence==null) return "";
+  var pct = Math.round(Math.max(0,Math.min(1,confidence))*100);
+  var color = confidenceColorVar(confidence);
+  var circumference = 163.36;
+  var arc = Math.max(4, circumference*Math.max(0,Math.min(1,confidence)));
+  return '<div style="text-align:center;margin:2px 0 4px;">' +
+    '<svg width="56" height="56" viewBox="0 0 64 64" style="display:block;margin:0 auto;">' +
+    '<circle cx="32" cy="32" r="26" fill="none" stroke="var(--surface-2)" stroke-width="6"/>' +
+    '<circle cx="32" cy="32" r="26" fill="none" stroke="'+color+'" stroke-width="6" stroke-linecap="round" stroke-dasharray="'+arc.toFixed(1)+' '+circumference+'" transform="rotate(-90 32 32)"/>' +
+    '<text x="32" y="37" font-size="14" font-weight="700" fill="'+color+'" text-anchor="middle">'+pct+'%</text>' +
+    '</svg>' +
+    '<div style="font-size:10.5px;color:var(--ink-muted);margin-top:2px;">уверенность замера</div>' +
+    '</div>';
 }
 
 /* ===================== live tap engine (comparison mode) ===================== */
@@ -619,6 +662,7 @@ function startListening(onTap){
       onTapCallback = onTap;
       listening = true;
       acquireWakeLock();
+      resetOscilloscope();
       loop();
       render();
     })
@@ -635,6 +679,7 @@ function stopListening(){
   if(audioCtx){ try{ audioCtx.close(); }catch(e){} audioCtx=null; }
   analyser=null; engineState="idle"; onTapCallback=null;
   releaseWakeLock();
+  resetOscilloscope();
   render();
 }
 function loop(){
@@ -645,28 +690,84 @@ function loop(){
   lastAnalysisTime = now;
   analyser.getFloatTimeDomainData(timeData);
   var rms = computeRMS(timeData);
-  var freq = rms>0.006 ? autoCorrelate(timeData, audioCtx.sampleRate) : -1;
+  var freqResult = null;
+  if(rms>0.006){
+    var activeSize = sizeById(state.selectedSizeId);
+    var range = getSearchRange(activeSize);
+    freqResult = range ? autoCorrelate(timeData, audioCtx.sampleRate, range[0], range[1]) : autoCorrelate(timeData, audioCtx.sampleRate);
+  }
 
   var cfg = SENS[state.sensitivity];
   if(engineState==="quiet"){
     if(rms > cfg.spike){ engineState="capturing"; captureBuffer=[]; captureStartTime=now; }
   }else if(engineState==="capturing"){
-    if(freq>0) captureBuffer.push(freq);
+    if(freqResult) captureBuffer.push(freqResult);
     if(now-captureStartTime >= CAPTURE_MS){
-      var result = medianOf(captureBuffer);
+      var freqs = captureBuffer.map(function(r){return r.freq;});
+      var confs = captureBuffer.map(function(r){return r.confidence;});
+      var resultFreq = medianOf(freqs);
+      var resultConf = confs.length ? medianOf(confs) : null;
       engineState="cooldown";
-      if(result && onTapCallback) onTapCallback(result);
+      if(resultFreq && onTapCallback) onTapCallback(resultFreq, resultConf);
     }
   }else if(engineState==="cooldown"){
     if(rms < cfg.quiet) engineState="quiet";
   }
-  updateLevelMeter(rms, "levelFill");
+  updateOscilloscope(timeData);
 }
-function updateLevelMeter(rms, elId){
-  var fill = document.getElementById(elId);
-  if(!fill) return;
-  var pct = Math.min(100, Math.round((rms/0.12)*100));
-  fill.style.width = pct+"%";
+var OSC_COLS = 56;
+var oscBuffer = new Array(OSC_COLS).fill(0);
+function resetOscilloscope(){ oscBuffer = new Array(OSC_COLS).fill(0); drawOscilloscope(); }
+function updateOscilloscope(buf){
+  var peak = 0;
+  for(var i=0;i<buf.length;i++){ var v=Math.abs(buf[i]); if(v>peak) peak=v; }
+  oscBuffer.push(Math.min(1, peak*3));
+  if(oscBuffer.length>OSC_COLS) oscBuffer.shift();
+  drawOscilloscope();
+}
+function drawOscilloscope(){
+  var canvas = document.getElementById("oscCanvas");
+  if(!canvas || !canvas.getContext) return;
+  var ctx = canvas.getContext("2d");
+  var w = canvas.width, h = canvas.height, midY = h/2;
+
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0,0,w,h);
+
+  var gridCols = 10, gridRows = 4;
+  ctx.strokeStyle = "rgba(60,200,110,0.18)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for(var gx=1; gx<gridCols; gx++){
+    var gxp = Math.round(w*gx/gridCols)+0.5;
+    ctx.moveTo(gxp,0); ctx.lineTo(gxp,h);
+  }
+  for(var gy=1; gy<gridRows; gy++){
+    var gyp = Math.round(h*gy/gridRows)+0.5;
+    ctx.moveTo(0,gyp); ctx.lineTo(w,gyp);
+  }
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(60,200,110,0.32)";
+  ctx.beginPath();
+  ctx.moveTo(0, Math.round(midY)+0.5); ctx.lineTo(w, Math.round(midY)+0.5);
+  ctx.stroke();
+
+  var colW = w/(OSC_COLS-1);
+  for(var i=0;i<oscBuffer.length-1;i++){
+    var v1 = oscBuffer[i], v2 = oscBuffer[i+1];
+    var x1 = i*colW, x2 = (i+1)*colW;
+    var alpha = 0.15 + 0.85*(i/(OSC_COLS-2));
+    ctx.strokeStyle = "rgba(57,255,120,"+alpha.toFixed(2)+")";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    var amp = h/2-4;
+    ctx.beginPath();
+    ctx.moveTo(x1, midY - v1*amp); ctx.lineTo(x2, midY - v2*amp);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x1, midY + v1*amp); ctx.lineTo(x2, midY + v2*amp);
+    ctx.stroke();
+  }
 }
 
 /* ===================== recorder engine (sample capture + playback) ===================== */
@@ -734,16 +835,18 @@ function finishRecording(){
   var reader = new FileReader();
   reader.onload = function(){
     recDataUrl = reader.result;
+    var activeSize = sizeById(state.selectedSizeId);
+    var range = getSearchRange(activeSize);
     estimateFreqFromBlob(blob, function(freq){
       recFreq = freq;
       recState = "done";
       vibrate(45);
       render();
-    });
+    }, range);
   };
   reader.readAsDataURL(blob);
 }
-function estimateFreqFromBlob(blob, cb){
+function estimateFreqFromBlob(blob, cb, range){
   blob.arrayBuffer().then(function(buf){
     var Ctx = window.AudioContext || window.webkitAudioContext;
     var ctx = new Ctx();
@@ -756,12 +859,13 @@ function estimateFreqFromBlob(blob, cb){
         var r = Math.sqrt(s/winSize);
         if(r>bestRms){ bestRms=r; bestStart=i; }
       }
-      var freq = -1;
+      var freqObj = null;
       if(bestStart+winSize<=data.length){
-        freq = autoCorrelate(data.subarray(bestStart, bestStart+winSize), sr);
+        var win = data.subarray(bestStart, bestStart+winSize);
+        freqObj = range ? autoCorrelate(win, sr, range[0], range[1]) : autoCorrelate(win, sr);
       }
       try{ ctx.close(); }catch(e){}
-      cb(freq>0 ? freq : null);
+      cb(freqObj ? freqObj.freq : null);
     }, function(){ try{ ctx.close(); }catch(e){} cb(null); });
   }).catch(function(){ cb(null); });
 }
@@ -794,10 +898,20 @@ function playTone(freq){
   }catch(e){}
 }
 
+/* ===================== per-size measurement log ===================== */
+var LOG_MAX = 200;
+function getLog(size){ return (size && Array.isArray(size.log)) ? size.log : []; }
+function pushLogEntry(size, entry){
+  if(!size) return;
+  if(!Array.isArray(size.log)) size.log = [];
+  size.log.unshift(entry);
+  if(size.log.length > LOG_MAX) size.log.length = LOG_MAX;
+  saveState();
+}
+
 /* ===================== app state ===================== */
 var view = "tuner";
 var lastReading = null;
-var tapHistory = [];
 var recorderOpen = false;
 
 document.getElementById("nav").addEventListener("click", function(e){
@@ -813,13 +927,14 @@ function render(){
   var main = document.getElementById("main");
   main.innerHTML = view==="tuner" ? renderTuner() : renderSizes();
   bindHandlers();
+  drawOscilloscope();
 }
 function renderAboutBody(){
   return '<div style="font-size:13px;line-height:1.65;">' +
     '<p style="margin:0 0 12px;"><a href="https://zaymozay-sys.github.io/tension-tuner/guide.html" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:none;">📘 Инструкция по использованию →</a></p>' +
-    '<p style="margin:0 0 10px;">Приложение «TapTension» разработано Александром Сергеевичем Воробьёвым, руководителем типографии «ФотоКот» (г. Липецк).</p>' +
+    '<p style="margin:0 0 10px;">Приложение «TapTension» разработано Александром Сергеевичем Воробьевым, руководителем типографии «ФотоКот» (г. Липецк).</p>' +
     '<p style="margin:0 0 10px;">Методика контроля натяжения защищена патентом РФ № 2867038 (RU 2 867 038 C1) «Способ контроля качества натяжения гибкого подвеса художественного полотна на подрамнике».</p>' +
-    '<p style="margin:0;color:var(--ink-muted);font-size:12px;">© 2026, Александр Воробьёв / «ФотоКот»</p>' +
+    '<p style="margin:0;color:var(--ink-muted);font-size:12px;">© 2026, Александр Воробьев / «ФотоКот»</p>' +
     '</div>';
 }
 
@@ -868,7 +983,7 @@ function renderRecorderPanel(context){
     html += '<div class="verdict '+(recFreq?"tuned":"idle")+'">'+
       (recFreq ? "Определено: "+fmtHz(recFreq)+" Гц" : "Не удалось определить высоту тона — укажите Гц вручную") + '</div>'+
       '<div class="rec-result"><audio class="rec-audio" controls src="'+recDataUrl+'"></audio></div>'+
-      '<div class="manual-row"><input type="number" min="1" step="0.1" id="recManualFreq" value="'+(recFreq?Math.round(recFreq*10)/10:"")+'" placeholder="Гц"></div>'+
+      '<div class="manual-row"><input type="number" min="1" step="0.1" id="recManualFreq" value="'+(recFreq?Math.round(recFreq*10)/10:"")+'" placeholder="Гц"><button class="btn secondary sm" type="button" id="playManualFreq">▶</button></div>'+
       '<div style="display:flex;gap:8px;margin-top:12px;">'+
       '<button class="btn secondary" id="btnRetryRec" style="flex:1;">↺ Заново</button>'+
       '<button class="btn" id="btnSaveRec" style="flex:1;" data-ctx="'+context+'">✓ Сохранить как эталон</button>'+
@@ -917,11 +1032,12 @@ function renderTuner(){
     return html;
   }
 
-  var avgN = (state.avgTaps===3) ? Math.min(3, tapHistory.length) : (tapHistory.length ? 1 : 0);
+  var log = getLog(size);
+  var avgN = (state.avgTaps===3) ? Math.min(3, log.length) : (log.length ? 1 : 0);
   var freq = null;
   if(avgN > 0){
     var sum = 0;
-    for(var ai=0; ai<avgN; ai++){ sum += tapHistory[ai].freq; }
+    for(var ai=0; ai<avgN; ai++){ sum += log[ai].freq; }
     freq = sum/avgN;
   }
   var diffPct = freq ? ((freq - size.target)/size.target*100) : 0;
@@ -937,6 +1053,9 @@ function renderTuner(){
     else{ verdictClass="tuned"; verdictIcon="✓"; verdictText="Натяжение в норме"; }
   }
 
+  var lastConfidence = log.length ? log[0].confidence : null;
+
+  var activeRange = getSearchRange(size);
   html += '<div class="frame tuner-face">' +
     '<div class="freq-readout">'+(freq?fmtHz(freq):"—")+'<span class="freq-unit">Гц</span></div>' +
     '<div class="freq-target">Эталон: '+fmtHz(size.target)+' Гц · допуск ±'+tol+'%'+
@@ -944,6 +1063,8 @@ function renderTuner(){
       (size.refAudio ? ' <button class="link-btn" id="playRef">🔊 прослушать эталон</button>' : '') +
       ' <button class="link-btn" id="exportSample">⬇ экспорт образца</button>' +
     '</div>' +
+    (activeRange ? '<div class="freq-target" style="margin-top:-6px;">Диапазон поиска: '+Math.round(activeRange[0])+'–'+Math.round(activeRange[1])+' Гц'+(size.rangeMin!=null&&size.rangeMax!=null?' (задан вручную)':' (авто)')+'</div>' : '') +
+    (freq ? renderConfidenceRing(lastConfidence) : '') +
     '<div class="gauge">' +
       '<div class="gauge-track">' +
         '<div class="gauge-zone" style="left:'+(50-zoneHalfPct)+'%; width:'+(zoneHalfPct*2)+'%;"></div>' +
@@ -953,7 +1074,7 @@ function renderTuner(){
       '<div class="gauge-labels"><span>слабее</span><span>туже</span></div>' +
     '</div>' +
     '<div class="verdict '+verdictClass+'">'+verdictIcon+' '+verdictText+'</div>' +
-    '<div class="level-wrap"><div class="level-label">уровень звука</div><div class="level-bar"><div class="level-fill" id="levelFill"></div></div></div>' +
+    '<div class="osc-wrap"><div class="osc-label">сигнал с микрофона</div><canvas class="osc-canvas" id="oscCanvas" width="300" height="52"></canvas></div>' +
     '<div class="sens-row">' +
       Object.keys(SENS).map(function(k){
         return '<div class="sens-chip'+(state.sensitivity===k?" active":"")+'" data-sens="'+k+'">'+SENS[k].label+'</div>';
@@ -971,17 +1092,18 @@ function renderTuner(){
     '<div class="mic-note">Микрофон нужно открыть по прямой ссылке на телефоне — во встроенном окне чата доступ к нему может быть закрыт браузером.</div>' +
     '</div>';
 
-  if(tapHistory.length){
+  if(log.length){
     html += '<div class="frame history">' +
       '<div class="history-title" style="display:flex;justify-content:space-between;align-items:center;">'+
-      '<span>Последние замеры</span><button class="link-btn" id="clearHistory" style="font-size:11px;padding:0;">Очистить</button></div>';
-    tapHistory.slice(0,5).forEach(function(h, idx){
+      '<span>Журнал замеров · '+log.length+'</span><button class="link-btn" id="clearHistory" style="font-size:11px;padding:0;">Очистить</button></div>';
+    log.slice(0,8).forEach(function(h, idx){
       var d = ((h.freq-size.target)/size.target*100);
       var sign = d>0 ? "+" : "";
-      html += '<div class="hist-row"><span>'+fmtTime(h.ts)+'</span><span>'+fmtHz(h.freq)+' Гц</span>'+
+      html += '<div class="hist-row"><span>'+fmtDateTime(h.ts)+'</span><span>'+fmtHz(h.freq)+' Гц</span>'+
         '<span style="display:flex;align-items:center;gap:8px;">'+sign+Math.round(d)+'%'+
         '<button data-del-tap="'+idx+'" aria-label="Удалить замер" style="background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:13px;padding:2px 4px;">✕</button></span></div>';
     });
+    if(log.length>8){ html += '<div style="text-align:center;font-size:11.5px;color:var(--ink-muted);padding-top:6px;">и ещё '+(log.length-8)+'…</div>'; }
     html += '</div>';
   }
 
@@ -1058,16 +1180,27 @@ function openSizeForm(sizeId){
   var body =
     '<div class="field"><label>Название размера</label><input id="sz_name" type="text" placeholder="Например: подрамник 45×55" value="'+escapeHtml(s?s.name:"")+'"></div>' +
     '<div class="field field-row">' +
-      '<div><label>Эталон, Гц</label><input id="sz_target" type="number" min="1" step="0.1" value="'+(s&&s.target!=null?s.target:"")+'" placeholder="не задан"></div>' +
+      '<div><label>Эталон, Гц</label><div style="display:flex;gap:6px;"><input id="sz_target" type="number" min="1" step="0.1" value="'+(s&&s.target!=null?s.target:"")+'" placeholder="не задан" style="flex:1;"><button class="btn secondary sm" type="button" id="playSzTarget">▶</button></div></div>' +
       '<div><label>Допуск, %</label><input id="sz_tol" type="number" min="1" max="30" step="1" value="'+(s?(s.tolerance||3):3)+'"></div>' +
     '</div>' +
-    '<div class="field-hint">Записать эталон по стуку можно на вкладке «Тюнер» после сохранения.</div>';
+    '<div class="field"><label>Диапазон поиска частоты, Гц</label>' +
+      '<div class="field-row">' +
+        '<input id="sz_rmin" type="number" min="20" step="1" value="'+(s&&s.rangeMin!=null?s.rangeMin:"")+'" placeholder="авто">' +
+        '<input id="sz_rmax" type="number" min="21" step="1" value="'+(s&&s.rangeMax!=null?s.rangeMax:"")+'" placeholder="авто">' +
+      '</div>' +
+      '<div class="field-hint">По умолчанию приложение само сужает поиск вокруг эталона. Задайте вручную, если слышите чужой тон или эталон ещё не записан.</div>' +
+    '</div>';
   var foot = '<button class="btn secondary" id="sz_cancel">Отмена</button>';
   if(editing) foot += '<button class="btn danger" id="sz_delete">Удалить</button>';
   foot += '<button class="btn" id="sz_save">'+(editing?"Сохранить":"Добавить")+'</button>';
   openDrawer(editing?"Изменить размер":"Новый размер", body, foot);
 
   document.getElementById("sz_cancel").addEventListener("click", closeDrawer);
+  var playSzTarget = document.getElementById("playSzTarget");
+  if(playSzTarget) playSzTarget.addEventListener("click", function(){
+    var v = Number(document.getElementById("sz_target").value);
+    if(v>0) playTone(v);
+  });
   if(editing){
     document.getElementById("sz_delete").addEventListener("click", function(){
       if(!confirm("Удалить размер «"+s.name+"»?")) return;
@@ -1080,10 +1213,20 @@ function openSizeForm(sizeId){
     var name = document.getElementById("sz_name").value.trim();
     if(!name){ document.getElementById("sz_name").focus(); return; }
     var tRaw = document.getElementById("sz_target").value;
+    var rMinRaw = document.getElementById("sz_rmin").value;
+    var rMaxRaw = document.getElementById("sz_rmax").value;
+    var rMin = rMinRaw==="" ? null : Number(rMinRaw);
+    var rMax = rMaxRaw==="" ? null : Number(rMaxRaw);
+    if(rMin!=null && rMax!=null && rMin>=rMax){
+      alert("«От» должно быть меньше «до» в диапазоне поиска.");
+      return;
+    }
     var payload = {
       name: name,
       target: tRaw==="" ? null : Number(tRaw),
-      tolerance: Number(document.getElementById("sz_tol").value) || 3
+      tolerance: Number(document.getElementById("sz_tol").value) || 3,
+      rangeMin: rMin,
+      rangeMax: rMax
     };
     if(editing){ Object.assign(s, payload); }
     else{ payload.id = nextId(); payload.createdAt = new Date().toISOString(); state.sizes.push(payload); state.selectedSizeId = payload.id; }
@@ -1117,19 +1260,20 @@ function bindHandlers(){
   var sizeSelect = document.getElementById("sizeSelect");
   if(sizeSelect) sizeSelect.addEventListener("change", function(){
     if(listening) stopListening();
-    state.selectedSizeId = sizeSelect.value; lastReading=null; tapHistory=[]; recorderOpen=false; resetRecording();
+    state.selectedSizeId = sizeSelect.value; lastReading=null; recorderOpen=false; resetRecording();
     saveState(); render();
   });
 
   var btnListen = document.getElementById("btnListen");
   if(btnListen) btnListen.addEventListener("click", function(){
-    startListening(function(freq){
-      lastReading = { freq:freq, ts:Date.now() };
-      tapHistory.unshift(lastReading);
+    startListening(function(freq, confidence){
       var size = sizeById(state.selectedSizeId);
+      lastReading = { freq:freq, ts:Date.now(), confidence: confidence };
+      pushLogEntry(size, lastReading);
       if(size && size.target){
-        var n = (state.avgTaps===3) ? Math.min(3, tapHistory.length) : 1;
-        var sum=0; for(var i=0;i<n;i++){ sum+=tapHistory[i].freq; }
+        var log = getLog(size);
+        var n = (state.avgTaps===3) ? Math.min(3, log.length) : 1;
+        var sum=0; for(var i=0;i<n;i++){ sum+=log[i].freq; }
         var avgFreq = sum/n;
         var diffPct = (avgFreq - size.target)/size.target*100;
         var tol = size.tolerance || 3;
@@ -1166,19 +1310,31 @@ function bindHandlers(){
     if(!confirm("Удалить эталон для «"+size.name+"»? Размер останется в списке, но потребуется записать эталон заново.")) return;
     size.target = null; size.refAudio = null;
     saveState();
-    lastReading=null; tapHistory=[]; recorderOpen=false; resetRecording();
+    lastReading=null; recorderOpen=false; resetRecording();
     render();
   });
 
   var clearHistory = document.getElementById("clearHistory");
-  if(clearHistory) clearHistory.addEventListener("click", function(){ tapHistory=[]; lastReading=null; render(); });
+  if(clearHistory) clearHistory.addEventListener("click", function(){
+    var size = sizeById(state.selectedSizeId);
+    if(!size || !getLog(size).length) return;
+    if(!confirm("Очистить весь журнал замеров для «"+size.name+"»? Действие необратимо.")) return;
+    size.log = [];
+    saveState();
+    lastReading=null;
+    render();
+  });
 
   document.querySelectorAll("[data-del-tap]").forEach(function(el){
     el.addEventListener("click", function(e){
       e.stopPropagation();
+      var size = sizeById(state.selectedSizeId);
+      if(!size) return;
       var idx = Number(el.dataset.delTap);
-      tapHistory.splice(idx,1);
-      lastReading = tapHistory.length ? tapHistory[0] : null;
+      var log = getLog(size);
+      log.splice(idx,1);
+      saveState();
+      lastReading = log.length ? log[0] : null;
       render();
     });
   });
@@ -1192,7 +1348,7 @@ function bindHandlers(){
     importSampleFile.addEventListener("change", function(){
       if(importSampleFile.files && importSampleFile.files[0]){
         importSingleSampleFile(importSampleFile.files[0], state.selectedSizeId, function(){
-          recorderOpen=false; resetRecording(); lastReading=null; tapHistory=[]; render();
+          recorderOpen=false; resetRecording(); lastReading=null; render();
         });
       }
       importSampleFile.value = "";
@@ -1202,6 +1358,11 @@ function bindHandlers(){
   if(btnStopRec) btnStopRec.addEventListener("click", stopRecordingNow);
   var btnRetryRec = document.getElementById("btnRetryRec");
   if(btnRetryRec) btnRetryRec.addEventListener("click", function(){ resetRecording(); render(); });
+  var playManualFreq = document.getElementById("playManualFreq");
+  if(playManualFreq) playManualFreq.addEventListener("click", function(){
+    var v = Number(document.getElementById("recManualFreq").value);
+    if(v>0) playTone(v);
+  });
   var btnSaveRec = document.getElementById("btnSaveRec");
   if(btnSaveRec) btnSaveRec.addEventListener("click", function(){
     var manualEl = document.getElementById("recManualFreq");
@@ -1235,7 +1396,7 @@ function bindHandlers(){
       }
       state.selectedSizeId = existing.id;
       saveState();
-      view = "tuner"; recorderOpen=false; resetRecording(); lastReading=null; tapHistory=[];
+      view = "tuner"; recorderOpen=false; resetRecording(); lastReading=null;
       render();
     });
   });
