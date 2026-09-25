@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#A487D6">
+<title>Натяжка — политика конфиденциальности / Privacy policy</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<style>
+  :root{
+    --bg:#F4F2FA; --surface:#FFFFFF; --surface-2:#F1EDF9; --border:#E2DBF1;
+    --ink:#332C46; --ink-muted:#8A81A0;
+    --accent:#A487D6; --accent-fg:#FFFFFF; --accent-soft:#EDE4FA;
+    --loose:#6E96C9; --loose-bg:#E2ECF9;
+    --tuned:#5CAE84; --tuned-bg:#E1F3E8;
+    --tight:#D97EA3; --tight-bg:#FAE3ED;
+    --radius:14px; --radius-sm:10px;
+    --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  :root[data-theme="dark"]{
+    --bg:#211C2E; --surface:#2A2438; --surface-2:#312A42; --border:#443A59;
+    --ink:#EDE9F5; --ink-muted:#A79BC2;
+    --accent:#BFA3E8; --accent-fg:#221A33; --accent-soft:#3B3050;
+    --loose:#8FB4E0; --loose-bg:#293852;
+    --tuned:#8AD1A9; --tuned-bg:#1F3A2C;
+    --tight:#E8A2C0; --tight-bg:#452A38;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#211C2E; --surface:#2A2438; --surface-2:#312A42; --border:#443A59;
+      --ink:#EDE9F5; --ink-muted:#A79BC2;
+      --accent:#BFA3E8; --accent-fg:#221A33; --accent-soft:#3B3050;
+      --loose:#8FB4E0; --loose-bg:#293852;
+      --tuned:#8AD1A9; --tuned-bg:#1F3A2C;
+      --tight:#E8A2C0; --tight-bg:#452A38;
+    }
+  }
+  html{ scroll-padding-top:calc(var(--safe-t) + 60px); }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+    padding-top:var(--safe-t); padding-bottom:var(--safe-b);
+  }
+  .wrap{ max-width:640px; margin:0 auto; padding:24px 20px 60px; }
+  .top{ position:sticky; top:0; background:var(--bg); padding:calc(14px + var(--safe-t)) 20px 12px; z-index:5; border-bottom:1px solid var(--border); }
+  h1{ font-size:22px; font-weight:800; margin:0 0 2px; letter-spacing:-0.01em; }
+  .sub{ color:var(--ink-muted); font-size:13px; margin:0; }
+  .toc{ display:flex; gap:6px; overflow-x:auto; padding:12px 20px 0; -webkit-overflow-scrolling:touch; }
+  .toc a{
+    flex-shrink:0; text-decoration:none; font-size:12.5px; font-weight:700; color:var(--accent);
+    background:var(--accent-soft); padding:6px 12px; border-radius:20px; white-space:nowrap;
+  }
+  section{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px; margin:16px 0; scroll-margin-top:120px; }
+  h2{ font-size:16.5px; font-weight:800; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  h2 .n{ background:var(--accent); color:var(--accent-fg); width:22px; height:22px; border-radius:50%; font-size:12px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  h3{ font-size:13.5px; font-weight:700; margin:16px 0 6px; }
+  p{ margin:0 0 10px; font-size:14px; }
+  ol,ul{ margin:0 0 10px; padding-left:20px; }
+  li{ margin-bottom:6px; font-size:14px; }
+  .tip{ background:var(--accent-soft); border-radius:var(--radius-sm); padding:11px 14px; font-size:13px; margin:10px 0; }
+  .warn{ background:var(--tight-bg); color:var(--tight); border-radius:var(--radius-sm); padding:11px 14px; font-size:13px; margin:10px 0; font-weight:600; }
+  .badge{ display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700; margin:2px 4px 2px 0; }
+  .badge.loose{ background:var(--loose-bg); color:var(--loose); }
+  .badge.tuned{ background:var(--tuned-bg); color:var(--tuned); }
+  .badge.tight{ background:var(--tight-bg); color:var(--tight); }
+  code{ background:var(--surface-2); padding:2px 6px; border-radius:5px; font-size:12.5px; }
+  a.link{ color:var(--accent); font-weight:700; }
+  .foot{ text-align:center; color:var(--ink-muted); font-size:12px; padding:20px 0 0; }
+  .badge.reject{ background:#F8E1DC; color:#C4513F; }
+  @media (prefers-color-scheme: dark){ .badge.reject{ background:#4A2A2E; color:#F29A8A; } }
+  table{ width:100%; border-collapse:collapse; font-size:13px; margin:6px 0 10px; }
+  td,th{ text-align:left; padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:top; }
+  th{ color:var(--ink-muted); font-weight:700; font-size:12px; }
+  .lang{ float:right; font-size:12.5px; font-weight:700; color:var(--accent); text-decoration:none; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="lang" href="#en">English</a>
+  <h1>Натяжка · TapTension</h1>
+  <p class="sub">Политика конфиденциальности · Privacy policy</p>
+</div>
+
+<div class="wrap">
+
+  <section id="ru">
+    <h2>Политика конфиденциальности</h2>
+    <p>Приложение «Натяжка» (TapTension). Действует с 25 сентября 2026 года.</p>
+    <h3>Какие данные обрабатываются</h3>
+    <ul>
+      <li><b>Звук с микрофона.</b> Микрофон включается только после нажатия «Записать образец», «Слушать и сравнивать» или «Слушать удар». Звук анализируется прямо на телефоне, чтобы измерить частоту, затухание и чистоту тона удара.</li>
+      <li><b>Записи эталонов.</b> Короткие записи удара (до 3 секунд), которые вы сохраняете как эталоны.</li>
+      <li><b>Размеры холстов и журнал замеров:</b> частоты, время затухания, чистота тона, вердикты, дата и время.</li>
+      <li><b>Данные режима «Про»:</b> номера заказов, имя исполнителя, название организации, идентификатор и масса ключа, результаты проверок. Их вводите вы.</li>
+    </ul>
+    <h3>Где хранятся данные</h3>
+    <p>Только в памяти приложения на вашем телефоне. Разработчик не получает эти данные: приложение не отправляет их на серверы, не использует аналитику, рекламу, учётные записи и не передаёт данные третьим лицам.</p>
+    <p>Файлы резервной копии, образцов, журнала и реестра (JSON, CSV, аудио), а также печатные формы создаются только по вашей команде и сохраняются туда, куда вы укажете.</p>
+    <h3>Хостинг</h3>
+    <p>Файлы приложения загружаются с веб-хостинга. Как и любой сайт, хостинг может вести стандартные технические журналы (IP-адрес, время запроса, тип браузера). Разработчик эти журналы не использует.</p>
+    <h3>Удаление данных</h3>
+    <p>Удалите размеры и журнал в приложении, очистите данные приложения в настройках телефона или удалите приложение. Записи реестра проверок внутри приложения не удаляются — так устроен реестр; они удаляются вместе с данными приложения.</p>
+    <h3>Дети</h3>
+    <p>Приложение — производственный инструмент и не предназначено для детей. Разработчик не получает никаких данных пользователей.</p>
+    <h3>Контакты</h3>
+    <p>Александр Сергеевич Воробьев, <a class="link" href="mailto:zaymozay@gmail.com">zaymozay@gmail.com</a>. Об изменениях политики будет сообщено на этой странице.</p>
+  </section>
+
+  <section id="en">
+    <h2>Privacy policy</h2>
+    <p>TapTension (Russian name “Natyazhka”). Effective September 25, 2026.</p>
+    <h3>What data is processed</h3>
+    <ul>
+      <li><b>Microphone audio.</b> The microphone turns on only after you press “Record sample”, “Listen and compare” or “Listen for the strike”. Sound is analyzed on the phone itself to measure the frequency, decay and tone purity of the tap.</li>
+      <li><b>Reference recordings.</b> Short tap recordings (up to 3 seconds) that you save as references.</li>
+      <li><b>Canvas sizes and the measurement log:</b> frequencies, decay times, tone purity, verdicts, date and time.</li>
+      <li><b>Pro mode data:</b> order numbers, operator name, organization name, tool ID and mass, check results. You enter them yourself.</li>
+    </ul>
+    <h3>Where the data is stored</h3>
+    <p>Only in the app’s storage on your phone. The developer does not receive this data: the app does not send it to any server, uses no analytics, ads or accounts, and does not share data with third parties.</p>
+    <p>Backup, sample, log and registry files (JSON, CSV, audio) and printable forms are created only when you ask for them and are saved where you choose.</p>
+    <h3>Hosting</h3>
+    <p>The app files are loaded from a web host. Like any website, the host may keep standard technical logs (IP address, request time, browser type). The developer does not use these logs.</p>
+    <h3>Deleting data</h3>
+    <p>Delete sizes and the log in the app, clear the app data in phone settings, or uninstall the app. Check registry records cannot be deleted inside the app — that is how the registry works; they are deleted together with the app data.</p>
+    <h3>Children</h3>
+    <p>The app is a production tool and is not intended for children. The developer receives no user data.</p>
+    <h3>Contact</h3>
+    <p>Aleksandr Vorobev, <a class="link" href="mailto:zaymozay@gmail.com">zaymozay@gmail.com</a>. Any changes to this policy will be posted on this page.</p>
+  </section>
+
+  <div class="foot">
+    <a class="link" href="index.html">Открыть приложение / Open the app</a>
+  </div>
+</div>
+</body>
+</html>

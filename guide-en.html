@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#A487D6">
+<title>TapTension — user guide</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<style>
+  :root{
+    --bg:#F4F2FA; --surface:#FFFFFF; --surface-2:#F1EDF9; --border:#E2DBF1;
+    --ink:#332C46; --ink-muted:#8A81A0;
+    --accent:#A487D6; --accent-fg:#FFFFFF; --accent-soft:#EDE4FA;
+    --loose:#6E96C9; --loose-bg:#E2ECF9;
+    --tuned:#5CAE84; --tuned-bg:#E1F3E8;
+    --tight:#D97EA3; --tight-bg:#FAE3ED;
+    --radius:14px; --radius-sm:10px;
+    --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  :root[data-theme="dark"]{
+    --bg:#211C2E; --surface:#2A2438; --surface-2:#312A42; --border:#443A59;
+    --ink:#EDE9F5; --ink-muted:#A79BC2;
+    --accent:#BFA3E8; --accent-fg:#221A33; --accent-soft:#3B3050;
+    --loose:#8FB4E0; --loose-bg:#293852;
+    --tuned:#8AD1A9; --tuned-bg:#1F3A2C;
+    --tight:#E8A2C0; --tight-bg:#452A38;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#211C2E; --surface:#2A2438; --surface-2:#312A42; --border:#443A59;
+      --ink:#EDE9F5; --ink-muted:#A79BC2;
+      --accent:#BFA3E8; --accent-fg:#221A33; --accent-soft:#3B3050;
+      --loose:#8FB4E0; --loose-bg:#293852;
+      --tuned:#8AD1A9; --tuned-bg:#1F3A2C;
+      --tight:#E8A2C0; --tight-bg:#452A38;
+    }
+  }
+  html{ scroll-padding-top:calc(var(--safe-t) + 60px); }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+    padding-top:var(--safe-t); padding-bottom:var(--safe-b);
+  }
+  .wrap{ max-width:640px; margin:0 auto; padding:24px 20px 60px; }
+  .top{ position:sticky; top:0; background:var(--bg); padding:calc(14px + var(--safe-t)) 20px 12px; z-index:5; border-bottom:1px solid var(--border); }
+  h1{ font-size:22px; font-weight:800; margin:0 0 2px; letter-spacing:-0.01em; }
+  .sub{ color:var(--ink-muted); font-size:13px; margin:0; }
+  .toc{ display:flex; gap:6px; overflow-x:auto; padding:12px 20px 0; -webkit-overflow-scrolling:touch; }
+  .toc a{
+    flex-shrink:0; text-decoration:none; font-size:12.5px; font-weight:700; color:var(--accent);
+    background:var(--accent-soft); padding:6px 12px; border-radius:20px; white-space:nowrap;
+  }
+  section{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px; margin:16px 0; scroll-margin-top:120px; }
+  h2{ font-size:16.5px; font-weight:800; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  h2 .n{ background:var(--accent); color:var(--accent-fg); width:22px; height:22px; border-radius:50%; font-size:12px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  h3{ font-size:13.5px; font-weight:700; margin:16px 0 6px; }
+  p{ margin:0 0 10px; font-size:14px; }
+  ol,ul{ margin:0 0 10px; padding-left:20px; }
+  li{ margin-bottom:6px; font-size:14px; }
+  .tip{ background:var(--accent-soft); border-radius:var(--radius-sm); padding:11px 14px; font-size:13px; margin:10px 0; }
+  .warn{ background:var(--tight-bg); color:var(--tight); border-radius:var(--radius-sm); padding:11px 14px; font-size:13px; margin:10px 0; font-weight:600; }
+  .badge{ display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700; margin:2px 4px 2px 0; }
+  .badge.loose{ background:var(--loose-bg); color:var(--loose); }
+  .badge.tuned{ background:var(--tuned-bg); color:var(--tuned); }
+  .badge.tight{ background:var(--tight-bg); color:var(--tight); }
+  code{ background:var(--surface-2); padding:2px 6px; border-radius:5px; font-size:12.5px; }
+  a.link{ color:var(--accent); font-weight:700; }
+  .foot{ text-align:center; color:var(--ink-muted); font-size:12px; padding:20px 0 0; }
+  .badge.reject{ background:#F8E1DC; color:#C4513F; }
+  @media (prefers-color-scheme: dark){ .badge.reject{ background:#4A2A2E; color:#F29A8A; } }
+  table{ width:100%; border-collapse:collapse; font-size:13px; margin:6px 0 10px; }
+  td,th{ text-align:left; padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:top; }
+  th{ color:var(--ink-muted); font-weight:700; font-size:12px; }
+  .lang{ float:right; font-size:12.5px; font-weight:700; color:var(--accent); text-decoration:none; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="lang" href="guide.html">Русский</a>
+  <h1>TapTension</h1>
+  <p class="sub">User guide · version 2.4, September 25, 2026</p>
+</div>
+<div class="toc">
+  <a href="#start">Quick start</a>
+  <a href="#reference">Reference</a>
+  <a href="#check">Check</a>
+  <a href="#verdict">Verdict</a>
+  <a href="#log">Log</a>
+  <a href="#pro">Pro mode</a>
+  <a href="#backup">Transfer</a>
+  <a href="#mic">Microphone</a>
+  <a href="#method">Method</a>
+</div>
+
+<div class="wrap">
+
+  <section id="start">
+    <h2><span class="n">1</span>Quick start</h2>
+    <p>TapTension checks the tension of the flexible hanger — the cord that connects the sides of a canvas stretcher frame — by the sound of a tap, like a guitar tuner. The sound is compared with a reference recorded for the same frame size on three features: pitch, decay time and tone purity.</p>
+    <ol>
+      <li>Open the app link in <b>Chrome</b> on your phone and add it to the home screen with the “📲 Install” button at the top.</li>
+      <li>On the “Canvases” tab, choose the frame size.</li>
+      <li>Record a reference on a correctly tensioned piece — section 2.</li>
+      <li>Check every piece before packing — section 3.</li>
+    </ol>
+    <p>There are two modes; the switch is at the top of the screen and in ⚙ Settings:</p>
+    <ul>
+      <li><b>Lite</b> — check the tension: canvas size, reference, tap, verdict. Sections 2–5.</li>
+      <li><b>Pro</b> — checks by a written procedure: order number, operator, control tool, sag check, re-check after correction, registry, exports and a report for a period. Section 6.</li>
+    </ul>
+    <div class="tip">All data stays on the phone. Internet is needed only for the first load; after that the app works offline.</div>
+    <p>To switch the language, open ⚙ Settings → “Язык / Language”. A direct link to the English interface: add <code>?lang=en</code> to the app address.</p>
+  </section>
+
+  <section id="reference">
+    <h2><span class="n">2</span>Reference for a canvas size</h2>
+    <p>Each size keeps its own reference — a recording of a tap on a correctly tensioned cord. Every check for that size is compared with it.</p>
+    <h3>Adding a size</h3>
+    <p>On the “Canvases” tab, pick a preset slot or add your own with “+ Custom size”.</p>
+    <h3>Recording the reference</h3>
+    <ol>
+      <li>Open the size on the “Tuner” tab.</li>
+      <li>Press “🎙 Record sample” — the app listens for 3 seconds.</li>
+      <li>Right away, tap the middle of the cord with a <b>4–5 mm hex key</b>, <b>perpendicular to the cord</b>, close to the microphone. Do not damp the cord — let the sound die out.</li>
+      <li>The app shows the frequency, decay time and tone purity. Listen to the recording, re-record if needed and press “Save as reference”.</li>
+    </ol>
+    <div class="tip">Use the same key, the same tap point and about the same distance to the phone (10–20 cm) every time. This is what makes readings comparable.</div>
+    <p>You can also enter the reference frequency manually, in hertz. Decay and tone purity are then not checked until a sample is recorded.</p>
+  </section>
+
+  <section id="check">
+    <h2><span class="n">3</span>Everyday check</h2>
+    <ol>
+      <li>Choose the canvas size in the list on the “Tuner” tab.</li>
+      <li>Press “🎙 Listen and compare”.</li>
+      <li>Tap the center of the cord with the same key, perpendicular to the cord.</li>
+      <li>Wait about a second while the sound dies out: the app measures the decay and shows the verdict.</li>
+    </ol>
+    <h3>Measurement accuracy</h3>
+    <ul>
+      <li><b>Sensitivity</b> (Quiet / Normal / Noisy) — match the noise level in the room.</li>
+      <li><b>“Average of 3”</b> — the verdict uses the last three taps instead of one. Lite mode only: in Pro, each check is one tap.</li>
+      <li><b>Vibration:</b> one long — OK, double — frequency out of tolerance, triple — reject.</li>
+    </ul>
+  </section>
+
+  <section id="verdict">
+    <h2><span class="n">4</span>How the verdict is made</h2>
+    <table>
+      <tr><th>Feature</th><th>What is measured</th></tr>
+      <tr><td><b>Frequency</b></td><td>The fundamental tone of the tap. Default tolerance ±3%. The cord frequency grows as the square root of tension, so ±3% in frequency is about ±6% in tension.</td></tr>
+      <tr><td><b>Decay</b></td><td>The time for the fundamental tone to fall by 20 dB (10× in amplitude) from its peak.</td></tr>
+      <tr><td><b>Tone purity</b></td><td>How periodic the sound is at the detected frequency, from 0 to 100%. Rattle and foreign overtones lower it.</td></tr>
+    </table>
+    <p>
+      <span class="badge loose">▲ low</span>
+      <span class="badge tuned">✓ OK</span>
+      <span class="badge tight">▼ high</span>
+      <span class="badge reject">✕ reject</span>
+    </p>
+    <p><b>Reject</b> — as described in the patent, a dull sound, fast decay or inharmonic rattle:</p>
+    <ul>
+      <li><b>“fast decay”</b> — decay shorter than 60% of the reference;</li>
+      <li><b>“rattle, impure tone”</b> — tone purity below 75% of the reference, or below 40%;</li>
+      <li><b>“dull sound”</b> — both at once.</li>
+    </ul>
+    <p>The reject check comes before the frequency check: a rejected piece goes back for re-tensioning even if its frequency is within tolerance.</p>
+    <div class="tip">If you see “No clear tone” instead of a verdict, the tap was dull, the cord rattles or there is background noise. Tap again; if it repeats, send the piece back for re-tensioning.</div>
+    <p>The 60% and 75% thresholds are defaults. In Pro mode you can tune them on your own pieces or set them manually — section 6. Questions and suggestions: <a class="link" href="mailto:zaymozay@gmail.com">zaymozay@gmail.com</a>.</p>
+  </section>
+
+  <section id="log">
+    <h2><span class="n">5</span>Inspection log</h2>
+    <p>Every tap is logged: date, time, frequency, deviation from the reference, decay, tone purity and verdict. The last eight measurements are shown on the “Tuner” tab, the totals for all sizes on the “Canvases” tab.</p>
+    <p><code>⬇ Export log (CSV)</code> — a spreadsheet for Excel covering all sizes. Up to 2000 recent measurements are kept per size.</p>
+    <p>The log shows how many pieces were checked and how many were sent back for re-tensioning.</p>
+  </section>
+
+  <section id="pro">
+    <h2><span class="n">6</span>Pro mode: checks by a written procedure</h2>
+    <p>For workshops that record every check in a registry: with the order number, operator and control tool, the result, and a re-check after correction. Turn it on with the “Pro” switch at the top of the screen. Tabs: “Check”, “Registry”, “References”.</p>
+    <h3>First setup</h3>
+    <ol>
+      <li><code>⚙ Pro settings</code>: organization (for printable forms), operator, control tool — ID (e.g., K-01) and mass in grams. These go into every record.</li>
+      <li>“References” tab → <code>+ List 20–120 cm, 10 cm step</code> or <code>+ Custom length</code>. The length is the side of the stretcher frame the cord is fixed to.</li>
+      <li>For each length, record a reference on a correctly tensioned piece with the same tool. A length without a reference cannot be checked. When you re-record, the previous reference stays in the history.</li>
+    </ol>
+    <h3>Checking a piece</h3>
+    <ol>
+      <li>Enter the order number and choose the length of the side with the cord.</li>
+      <li>Press <code>🎙 Listen for the strike</code> and strike the middle of the cord <b>once</b>. After the strike the app stops listening by itself.</li>
+      <li>Inspect the canvas and mark “No sag” or “Sag present”.</li>
+      <li>Press <code>✓ Add to registry</code>. Result: <span class="badge tuned">conforms — pass to packing</span> or <span class="badge reject">does not conform — return for correction</span> with the reason.</li>
+    </ol>
+    <p>If an order has several canvases of the same length, add a slash number: 1234/1, 1234/2.</p>
+    <h3>Re-check</h3>
+    <p>Pieces returned for correction are listed under “Awaiting re-check”. After the correction, press <code>Re-check</code>: the order number and length are filled in; describe what was done in the “Correction” field. The re-check record refers to the primary one. The primary non-conformity record is never deleted or changed.</p>
+    <h3>Special cases</h3>
+    <table>
+      <tr><th>On screen</th><th>What to do</th></tr>
+      <tr><td><b>No response</b> — no tone detected</td><td>There was a strike but no cord sound: mark the inspection and record “does not conform” with the reason “no response”. If there was no strike and the microphone caught a stray sound — “There was no strike — cancel”.</td></tr>
+      <tr><td><b>Too noisy</b> or <b>second strike during decay</b></td><td>The decay was not measured: record “check interrupted” and check again.</td></tr>
+      <tr><td><b>Wrong length selected</b> or the strike missed the middle of the cord</td><td>Press “Don’t count this strike: record ‘check interrupted’” and check again. Until the strike result is recorded, the length cannot be changed, and the strike is kept when you switch tabs.</td></tr>
+      <tr><td><b>Tool changed</b></td><td>After you change the tool ID or mass, strike a piece with reference tension. If the response matches the reference, press “Response verified against references”. If not, re-record the references with the new tool.</td></tr>
+    </table>
+    <h3>Registry, exports and report</h3>
+    <p>The “Registry” tab shows the counters, the pieces awaiting a re-check and the latest records. Records are never deleted or edited: a mistake is corrected with a new check.</p>
+    <ul>
+      <li><code>⬇ Check registry (CSV)</code> — all records: number, date, order, length, primary or re-check, correction, frequency, decay, tone purity, sag, result, reason, action, item status, operator, tool, reference and thresholds.</li>
+      <li><code>⬇ Reference list (CSV)</code> — current and replaced references by length, with the tool and the audio file name. The audio file itself is saved with <code>⬇ Audio file</code> on the “References” tab.</li>
+      <li><code>🖨 Registry RP-01</code> — printable form: tool passport, reference list, all checks, signature line.</li>
+      <li><code>🖨 Generate report</code> — the OTCH-PAT-01 report for the chosen period: summary, reasons for non-conformity, breakdown by length, tool, references, operators and conclusion.</li>
+    </ul>
+    <p>Printable forms open inside the app; on a phone choose “Save as PDF” in the print menu.</p>
+    <h3>Threshold tuning</h3>
+    <p>“References” → <code>Threshold tuning</code>. Choose a length, make 10–15 strikes on known-good pieces and 5–10 on deliberately under-tensioned ones. The app suggests a frequency tolerance and reject thresholds that let the good pieces pass, and shows how many under-tensioned ones are caught. <code>Apply</code> — the thresholds apply to all lengths, the tolerance to the chosen one. The thresholds used for a check are saved in every record. Manual thresholds are set in <code>⚙ Pro settings</code>.</p>
+    <div class="warn">The registry is stored only on this phone. Save a backup at least once a week: “Registry” → <code>⬇ Export to file</code>. The app reminds you if no backup has been saved for 7 days.</div>
+  </section>
+
+  <section id="backup">
+    <h2><span class="n">7</span>Backup and transfer</h2>
+    <p>Sizes, references, the log and the registry are stored only on this phone, with no cloud. To move them to another device or another workshop, use a file.</p>
+    <h3>Everything at once</h3>
+    <p><code>⬇ Export to file</code> and <code>⬆ Import from file</code> are at the bottom of the “Canvases” tab, and in Pro mode on the “Registry” tab. The file holds everything: sizes, references, the log, settings and the check registry. On import, sizes, references and settings are replaced with the data from the file, while registry records are added to the existing ones, without duplicates.</p>
+    <h3>A single reference</h3>
+    <p>On the “Tuner” tab, for a size with a reference — <code>⬇ export sample</code>. On the other device, in an empty slot — <code>⬆ Load sample from file</code>. This transfers one reference without touching the other sizes.</p>
+  </section>
+
+  <section id="mic">
+    <h2><span class="n">8</span>If the microphone does not work</h2>
+    <p>Most often Android remembered a denied permission and no longer asks. Check in this order:</p>
+    <ol>
+      <li>Open the link in regular Chrome, not inside another app’s built-in browser.</li>
+      <li>In Chrome, tap the icon to the left of the address → “Permissions” → “Microphone” → “Allow”, then reload the page.</li>
+      <li>If there is no “Microphone” item — phone Settings → Apps → Chrome → Permissions → Microphone → Allow.</li>
+      <li>Some Android skins (e.g., ColorOS) have a separate “Permission manager” in privacy settings — check it too.</li>
+    </ol>
+    <div class="warn">An error code such as <code>[NotReadableError]</code> or <code>[NotAllowedError]</code> points to the cause more precisely than the general steps.</div>
+  </section>
+
+  <section id="method">
+    <h2><span class="n">9</span>About the method</h2>
+    <p>The inspection method is protected by Russian Patent No. 2867038 (RU 2 867 038 C1), “Method for Quality Control of the Tension of a Flexible Hanger of an Art Canvas on a Stretcher Frame.” Inventor and patent holder: Aleksandr Vorobev. <a class="link" href="https://new.fips.ru/registers-doc-view/fips_servlet?DB=RUPAT&amp;DocNumber=2867038&amp;TypeFile=html" target="_blank" rel="noopener">Patent in the Rospatent (FIPS) register →</a></p>
+    <p>The app is free. The author and patent holder permits free use of this method through the app for quality control of one’s own products.</p>
+  </section>
+
+  <div class="foot">
+    Developed by Aleksandr Vorobev, FotoKot print studio (Lipetsk, Russia).<br>
+    <a class="link" href="privacy.html#en">Privacy policy</a> · <a class="link" href="index.html?lang=en">Open the app</a> · <a class="link" href="mailto:zaymozay@gmail.com">zaymozay@gmail.com</a>
+  </div>
+</div>
+</body>
+</html>

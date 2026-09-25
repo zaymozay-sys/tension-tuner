@@ -1,0 +1,21 @@
+{
+  "id": "./",
+  "name": "Натяжка — TapTension",
+  "short_name": "Натяжка",
+  "description": "Проверка натяжения шнура подвеса холста по звуку удара: частота, затухание и чистота тона в сравнении с эталоном. Режим «Про» — реестр проверок, выгрузки и отчёт. Способ по патенту РФ № 2867038.",
+  "lang": "ru",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F2FA",
+  "theme_color": "#A487D6",
+  "categories": ["utilities", "productivity", "business"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
